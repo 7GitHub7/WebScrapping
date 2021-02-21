@@ -1,14 +1,10 @@
 import requests, bs4, sys, csv, datetime
+import pandas as pd
 
 now = datetime.datetime.now()
 
-#the scraper axcepts two command line arguments - maker and model
-#TO DO: validate input, apparently argparse is helpful
-# maker = sys.argv[1]
-# model = sys.argv[2]
+df = pd.read_csv('car_info_data_frame.csv',sep='\t')
 
-# variables
-# html_page - whole html page from PATH 
 MAKER = 'opel'
 MODEL = 'astra'
 PATH = 'https://www.otomoto.pl/osobowe/citroen/c5/rawa-mazowiecka/?search%5Bfilter_enum_fuel_type%5D%5B0%5D=petrol&search%5Bfilter_enum_fuel_type%5D%5B1%5D=petrol-lpg&search%5Border%5D=created_at_first%3Adesc&search%5Bbrand_program_id%5D%5B0%5D=&search%5Bdist%5D=155&search%5Bcountry%5D='
@@ -36,7 +32,29 @@ def get_item_price(item):
 def get_item_title(item):
     return item.find('a',class_='offer-title__link').text.strip()
 
-def get
+def append_car_info_to_data_frame(item_link,df):
+    item_html_page = get_html_page_as_bs(item_link)
+    ul = item_html_page.find_all('li', {'class': 'offer-params__item'})
+    values_list = []
+    labels_list = []
+
+    for li in ul:
+        
+        labels_list.append(li.find('span', {'class':'offer-params__label'}).text)
+        value = li.find('div', {'class':'offer-params__value'}).find('a')
+        if value:
+            value = value.text
+        else:
+            value = li.find('div', {'class':'offer-params__value'}).text
+        
+        values_list.append(value.strip())
+    
+
+    test = []
+    test.append(values_list)
+    print(df)
+    return df.append(test, ignore_index=True)
+    
 
 
 
@@ -44,7 +62,7 @@ html_page = get_html_page_as_bs(PATH)
 pages_number = get_number_of_pages(html_page)
 
 
-for i in range(1,pages_number):
+for i in range(1):
 
     current_page = get_html_page_as_bs(PATH + '?page=' + str(i))
     car_item_list = get_car_item_list(current_page)
@@ -60,6 +78,8 @@ for i in range(1,pages_number):
         link_to_car = get_link_to_car_item(item)
         current_car_data.append(link_to_car)
 
+        df = append_car_info_to_data_frame(link_to_car,df)
+        print(df)
   
         #Iterate through parameters
         paramList = ["year", "mileage", "engine_capacity", "fuel_type"]
@@ -74,9 +94,11 @@ for i in range(1,pages_number):
 
         # go deeper into item page(for each car in list)
         # get 
+        break
 
 
         print(current_car_data)
         outputWriter.writerow(current_car_data)
 
 carFile.close()
+df.to_csv('car_info_data_frame.csv', sep='\t', encoding='utf-8',index=False)
